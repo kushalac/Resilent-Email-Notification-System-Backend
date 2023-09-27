@@ -75,7 +75,7 @@ public class DashboardController {
             List<String> userList = notification.getUserList();
 
             if (userList != null && !userList.isEmpty()) {
-                for (String userId : userList) {
+                for (@SuppressWarnings("unused") String userId : userList) {
                     if ("promotions".equals(notification.getNotificationType())) {
                         totalPromotionsToUsersCount++;
                     } else if ("releaseEvents".equals(notification.getNotificationType())) {
@@ -134,14 +134,18 @@ public class DashboardController {
                 for (String userId : userList) {
                     User user = userRepository.findById(userId).orElse(null);
 
-                    if (user != null && user.isReceiveNotifications()) {
+                    if (user != null) {
                         Map<String, String> receivedNotifications = user.getReceivedNotifications();
                         for (Map.Entry<String, String> entry : receivedNotifications.entrySet()) {
                             String notificationId = entry.getKey();
                             String formattedTimestamp = entry.getValue();
                             LocalDate notificationDate = LocalDate.parse(formattedTimestamp.substring(0, 10));
 
-                            if (notificationDate.isAfter(startDate) && notificationDate.isBefore(endDate.plusDays(1))) {
+                            // Compare the notificationId from the inner loop
+                            // with the notificationId you came from in the outer loop
+                            if (notificationId.equals(notification.getNotificationId())
+                                    && notificationDate.isAfter(startDate)
+                                    && notificationDate.isBefore(endDate.plusDays(1))) {
                                 Map<String, Object> resultMap = Map.of(
                                         "userId", userId,
                                         "userName", user.getName(),
@@ -158,7 +162,9 @@ public class DashboardController {
                 }
             }
         }
+        System.out.println(result);
 
         return result;
     }
+
 }
