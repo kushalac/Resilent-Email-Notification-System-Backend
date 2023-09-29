@@ -2,11 +2,13 @@ package com.example.demo;
 
 import javax.mail.*;
 import javax.mail.internet.*;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import java.io.File;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class EmailSender {
     // Create a thread pool with multiple threads to send emails concurrently.
@@ -16,6 +18,7 @@ public class EmailSender {
         executorService.submit(() -> {
             final String senderEmail = "notificationsystem03@gmail.com";
             final String senderPassword = "tgqfhjwyjwfhdmvn";
+
             Properties props = new Properties();
             props.put("mail.smtp.auth", "true");
             props.put("mail.smtp.starttls.enable", "true");
@@ -34,17 +37,43 @@ public class EmailSender {
                 message.setFrom(new InternetAddress(senderEmail));
                 message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
                 message.setSubject(subject);
-                message.setContent(content, "text/html");
 
-               
+                // Create the message body part for the email content
+                MimeBodyPart messageBodyPart = new MimeBodyPart();
+                messageBodyPart.setContent(content, "text/html");
 
+                // Check if attachmentFilePath is not null and the subject is "Welcome to our service"
+                if ("Welcome to our service".equals(subject)) {
+                    String attachmentFilePath = "src/main/resources/Purpose & Values.pdf";
+                    // Create the message body part for the attachment
+                    MimeBodyPart attachmentBodyPart = new MimeBodyPart();
+                    DataSource source = new FileDataSource(attachmentFilePath);
+                    attachmentBodyPart.setDataHandler(new DataHandler(source));
+                    attachmentBodyPart.setFileName(new File(attachmentFilePath).getName());
+
+                    // Create a multipart message to combine the content and attachment
+                    Multipart multipart = new MimeMultipart();
+                    multipart.addBodyPart(messageBodyPart);
+                    multipart.addBodyPart(attachmentBodyPart);
+
+                    // Set the message content to the multipart message
+                    message.setContent(multipart);
+                } else {
+                    // Set the message content for subjects other than "Welcome to our service"
+                    message.setContent(content, "text/html");
+                }
+
+                // Send the email
                 Transport.send(message);
+
+                System.out.println("Email sent successfully to " + recipient);
             } catch (MessagingException e) {
                 System.err.println("Error sending email: " + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
+
 
     // Shutdown the executor service when the application exits.
     public static void shutdownExecutorService() {
